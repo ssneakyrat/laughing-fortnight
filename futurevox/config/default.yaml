@@ -1,0 +1,18 @@
+# FutureVox-Singer Configuration
+
+# Datasets
+datasets:
+  data_raw: "datasets/gin"
+  data_set: "datasets/gin/binary/gin.h5"
+  
+# Audio parameters
+audio:
+  sample_rate: 22050
+  n_fft: 1024
+  win_length: 1024
+  hop_length: 256
+  n_mels: 80
+  fmin: 30  # Lower minimum frequency to better capture bass voices
+  fmax: 8000  # Higher maximum frequency for better high-frequency resolution
+  f0_min: 65  # Minimum F0 for singing voice
+  f0_max: 1200  # Maximum F0 for singing voice
