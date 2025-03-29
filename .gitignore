@@ -4,6 +4,7 @@ futurevox/outputs/
 futurevox/test/
 futurevox/logs/
 futurevox/checkpoints/
+futurevox/output/
 *.pyc
 *.ipynb
 *.png
