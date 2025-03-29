@@ -1,10 +1,14 @@
-# FutureVox-Singer Configuration
-
-# Datasets
-datasets:
+# Dataset options
+data:
   data_raw: "datasets/gin"
   data_set: "datasets/gin/binary/gin.h5"
-  
+  train_data_dir: "datasets/gin/binary"
+  valid_data_dir: "datasets/gin/binary"
+  h5_path: "datasets/gin/binary/gin.h5"
+  batch_size: 8
+  num_workers: 4
+  max_seq_len: 200
+
 # Audio parameters
 audio:
   sample_rate: 22050
@@ -12,7 +16,41 @@ audio:
   win_length: 1024
   hop_length: 256
   n_mels: 80
-  fmin: 30  # Lower minimum frequency to better capture bass voices
-  fmax: 8000  # Higher maximum frequency for better high-frequency resolution
-  f0_min: 65  # Minimum F0 for singing voice
-  f0_max: 1200  # Maximum F0 for singing voice
+  fmin: 30  
+  fmax: 8000
+  f0_min: 65
+  f0_max: 1200
+
+# Model parameters
+model:
+  # Phoneme Encoder parameters
+  phoneme_encoder:
+    num_phonemes: 100  # Number of unique phonemes in dataset
+    embedding_dim: 192
+    hidden_dim: 256
+    n_layers: 3
+    kernel_size: 3
+    dropout: 0.1
+    dilation_rates: [1, 3, 9]
+  
+  # F0 Predictor parameters (will implement later)
+  f0_predictor:
+    hidden_dim: 256
+    n_layers: 2
+    kernel_size: 3
+    dropout: 0.2
+  
+  # Training parameters
+  learning_rate: 1e-4
+  weight_decay: 1e-6
+  max_epochs: 100
+  lr_decay: 0.999
+  clip_grad_norm: 5.0
+  validate_every_n_epochs: 1
+  save_every_n_epochs: 5
+  
+logging:
+  log_dir: "logs"
+  checkpoint_dir: "checkpoints"
+  images_dir: "images"
+  sample_rate: 22050
