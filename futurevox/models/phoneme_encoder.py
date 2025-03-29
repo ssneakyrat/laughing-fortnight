@@ -9,27 +9,26 @@ class ResBlock(nn.Module):
     """
     def __init__(self, dim, kernel_size, dilation):
         super().__init__()
-        self.conv_layer = nn.Sequential(
-            nn.Conv1d(
-                dim, 
-                dim, 
-                kernel_size=kernel_size, 
-                dilation=dilation, 
-                padding='same'
-            ),
-            nn.LayerNorm(dim),
-            nn.ReLU(),
-            nn.Dropout(0.1),
-            nn.Conv1d(
-                dim, 
-                dim, 
-                kernel_size=kernel_size, 
-                dilation=1, 
-                padding='same'
-            ),
-            nn.LayerNorm(dim),
+        self.conv1 = nn.Conv1d(
+            dim, 
+            dim, 
+            kernel_size=kernel_size, 
+            dilation=dilation, 
+            padding='same'
         )
-        self.relu = nn.ReLU()
+        # For 1D convolution, we need to normalize over the channel dimension
+        self.norm1 = nn.GroupNorm(num_groups=1, num_channels=dim)
+        self.relu1 = nn.ReLU()
+        self.dropout = nn.Dropout(0.1)
+        self.conv2 = nn.Conv1d(
+            dim, 
+            dim, 
+            kernel_size=kernel_size, 
+            dilation=1, 
+            padding='same'
+        )
+        self.norm2 = nn.GroupNorm(num_groups=1, num_channels=dim)
+        self.relu2 = nn.ReLU()
 
     def forward(self, x):
         """
@@ -39,9 +38,14 @@ class ResBlock(nn.Module):
             [B, C, T]
         """
         residual = x
-        x = self.conv_layer(x)
+        x = self.conv1(x)
+        x = self.norm1(x)
+        x = self.relu1(x)
+        x = self.dropout(x)
+        x = self.conv2(x)
+        x = self.norm2(x)
         x = x + residual
-        x = self.relu(x)
+        x = self.relu2(x)
         return x
 
 
@@ -71,17 +75,16 @@ class PhonemeEncoder(nn.Module):
         self.embedding = nn.Embedding(num_phonemes, embedding_dim)
         
         # Initial convolution to adjust dimensions
-        self.prenet = nn.Sequential(
-            nn.Conv1d(
-                embedding_dim, 
-                hidden_dim, 
-                kernel_size=kernel_size, 
-                padding='same'
-            ),
-            nn.LayerNorm(hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(dropout)
+        self.conv1 = nn.Conv1d(
+            embedding_dim, 
+            hidden_dim, 
+            kernel_size=kernel_size, 
+            padding='same'
         )
+        # For 1D convolution, we need to normalize over the channel dimension
+        self.norm1 = nn.GroupNorm(num_groups=1, num_channels=hidden_dim)
+        self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(dropout)
         
         # Stack of ResBlocks
         self.res_blocks = nn.ModuleList([
@@ -93,7 +96,7 @@ class PhonemeEncoder(nn.Module):
         ])
         
         # Final dropout
-        self.dropout = nn.Dropout(dropout)
+        self.final_dropout = nn.Dropout(dropout)
         
         # Save dimensions for later use
         self.hidden_dim = hidden_dim
@@ -114,14 +117,17 @@ class PhonemeEncoder(nn.Module):
         x = x.transpose(1, 2)
         
         # Apply prenet
-        x = self.prenet(x)
+        x = self.conv1(x)
+        x = self.norm1(x)
+        x = self.relu(x)
+        x = self.dropout(x)
         
         # Apply ResBlocks
         for res_block in self.res_blocks:
             x = res_block(x)
         
         # Apply final dropout
-        x = self.dropout(x)
+        x = self.final_dropout(x)
         
         # Transpose back for output [B, E, T] -> [B, T, E]
         x = x.transpose(1, 2)

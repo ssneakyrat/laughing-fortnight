@@ -145,16 +145,24 @@ class PhonemeEncoderLightning(pl.LightningModule):
         Returns:
             optimizer: PyTorch optimizer
         """
+
+        # Make sure learning rate is a float
+        lr = float(self.config['model']['learning_rate'])
+        weight_decay = float(self.config['model']['weight_decay'])
+
         optimizer = torch.optim.Adam(
             self.parameters(),
-            lr=self.config['model']['learning_rate'],
-            weight_decay=self.config['model']['weight_decay']
+            lr=lr,
+            weight_decay=weight_decay
         )
         
+        # Make sure lr_decay is a float too
+        lr_decay = float(self.config['model']['lr_decay'])
+
         # Learning rate scheduler
         lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(
             optimizer,
-            gamma=self.config['model']['lr_decay']
+            gamma=lr_decay
         )
         
         return {
